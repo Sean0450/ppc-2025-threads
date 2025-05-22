@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -13,8 +12,8 @@
 #include "seq/muradov_m_rect_int/include/ops_seq.hpp"
 
 TEST(muradov_m_rect_int_seq, test_pipeline_run) {
-  std::size_t iterations = 480;
-  std::vector<std::pair<double, double>> bounds(3, {-1.0, 1.0});
+  std::size_t iterations = 475;
+  std::vector<std::pair<double, double>> bounds(3, {-3.0, 3.0});
   double out = 0.0;
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
@@ -26,7 +25,7 @@ TEST(muradov_m_rect_int_seq, test_pipeline_run) {
   task_data_seq->outputs_count.emplace_back(1);
 
   auto test_task_sequential = std::make_shared<muradov_m_rect_int_seq::RectIntTaskSequential>(
-      task_data_seq, [](const auto &args) { return (args[0] * args[1]) + std::pow(args[1], 2); });
+      task_data_seq, [](const auto &args) { return (args[0] * args[1]) + (args[1] * args[1]); });
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
   perf_attr->num_running = 10;
@@ -42,11 +41,13 @@ TEST(muradov_m_rect_int_seq, test_pipeline_run) {
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(test_task_sequential);
   perf_analyzer->PipelineRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
+
+  EXPECT_NEAR(out, 648, 0.3);
 }
 
 TEST(muradov_m_rect_int_seq, test_task_run) {
-  std::size_t iterations = 480;
-  std::vector<std::pair<double, double>> bounds(3, {-1.0, 1.0});
+  std::size_t iterations = 475;
+  std::vector<std::pair<double, double>> bounds(3, {-3.0, 3.0});
   double out = 0.0;
 
   auto task_data_seq = std::make_shared<ppc::core::TaskData>();
@@ -58,7 +59,7 @@ TEST(muradov_m_rect_int_seq, test_task_run) {
   task_data_seq->outputs_count.emplace_back(1);
 
   auto test_task_sequential = std::make_shared<muradov_m_rect_int_seq::RectIntTaskSequential>(
-      task_data_seq, [](const auto &args) { return (args[0] * args[1]) + std::pow(args[1], 2); });
+      task_data_seq, [](const auto &args) { return (args[0] * args[1]) + (args[1] * args[1]); });
 
   auto perf_attr = std::make_shared<ppc::core::PerfAttr>();
   perf_attr->num_running = 10;
@@ -74,4 +75,6 @@ TEST(muradov_m_rect_int_seq, test_task_run) {
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(test_task_sequential);
   perf_analyzer->TaskRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
+
+  EXPECT_NEAR(out, 648, 0.3);
 }

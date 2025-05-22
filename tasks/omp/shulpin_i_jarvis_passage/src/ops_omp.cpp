@@ -90,20 +90,13 @@ void shulpin_i_jarvis_omp::JarvisOMPParallel::MakeJarvisPassageOMP(
   hull.reserve(total);
 
   int start = 0;
-#pragma omp parallel for
   for (int i = 1; i < total; ++i) {
     const auto& a = input_jar[i];
     const auto& b = input_jar[start];
     if (a.x < b.x || (a.x == b.x && a.y < b.y)) {
-#pragma omp critical
-      {
-        if (a.x < input_jar[start].x || (a.x == input_jar[start].x && a.y < input_jar[start].y)) {
-          start = i;
-        }
-      }
+      start = i;
     }
   }
-
   int active = start;
 
   do {
@@ -114,9 +107,11 @@ void shulpin_i_jarvis_omp::JarvisOMPParallel::MakeJarvisPassageOMP(
     }
 
     int candidate = (active + 1) % total;
+    std::vector<int> thread_candidates(omp_get_max_threads(), candidate);
 
 #pragma omp parallel
     {
+      int tid = omp_get_thread_num();
       int local_candidate = candidate;
 
 #pragma omp for nowait
@@ -127,15 +122,20 @@ void shulpin_i_jarvis_omp::JarvisOMPParallel::MakeJarvisPassageOMP(
         }
       }
 
-#pragma omp critical
-      {
-        if (Orientation(current, input_jar[local_candidate], input_jar[candidate]) == 2) {
-          candidate = local_candidate;
-        }
+      thread_candidates[tid] = local_candidate;
+    }
+
+    for (int tid = 0; tid < static_cast<int>(thread_candidates.size()); ++tid) {
+      int cand = thread_candidates[tid];
+      if (Orientation(current, input_jar[cand], input_jar[candidate]) == 2) {
+        candidate = cand;
       }
     }
 
-    if (candidate == active) break;
+    if (candidate == active) {
+      break;
+    }
+
     active = candidate;
 
   } while (active != start);

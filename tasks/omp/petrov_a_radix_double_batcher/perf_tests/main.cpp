@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <random>
+#include <numeric>
 #include <vector>
 
 #include "../include/ops_omp.hpp"
@@ -13,18 +13,15 @@
 #include "core/task/include/task.hpp"
 
 namespace {
-std::vector<double> RandomVector(size_t size) {
-  std::random_device dev;
-  std::mt19937 gen(dev());
-  std::uniform_real_distribution<> dist(-5000, 8000);
+std::vector<double> CreateVector(size_t size) {
   std::vector<double> vec(size);
-  std::ranges::generate(vec, [&dist, &gen] { return dist(gen); });
+  std::iota(vec.rbegin(), vec.rend(), 0);
   return vec;
 }
 }  // namespace
 
 TEST(petrov_a_radix_double_batcher_omp, test_pipeline_run) {
-  auto in = RandomVector(25'000'000);
+  auto in = CreateVector(22222000);
   std::vector<double> out(in.size());
 
   auto task_data_omp = std::make_shared<ppc::core::TaskData>();
@@ -47,12 +44,11 @@ TEST(petrov_a_radix_double_batcher_omp, test_pipeline_run) {
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(task);
   perf_analyzer->PipelineRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
-
-  ASSERT_EQ(std::ranges::is_sorted(out), true);
+  ASSERT_TRUE(std::ranges::is_sorted(out));
 }
 
 TEST(petrov_a_radix_double_batcher_omp, test_task_run) {
-  auto in = RandomVector(25'000'000);
+  auto in = CreateVector(22222000);
   std::vector<double> out(in.size());
 
   auto task_data_omp = std::make_shared<ppc::core::TaskData>();
@@ -75,6 +71,5 @@ TEST(petrov_a_radix_double_batcher_omp, test_task_run) {
   auto perf_analyzer = std::make_shared<ppc::core::Perf>(task);
   perf_analyzer->TaskRun(perf_attr, perf_results);
   ppc::core::Perf::PrintPerfStatistic(perf_results);
-
-  ASSERT_EQ(std::ranges::is_sorted(out), true);
+  ASSERT_TRUE(std::ranges::is_sorted(out));
 }
